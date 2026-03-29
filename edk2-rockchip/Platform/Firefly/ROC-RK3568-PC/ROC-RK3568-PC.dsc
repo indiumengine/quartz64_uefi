@@ -120,6 +120,7 @@
   CruLib|Silicon/Rockchip/Rk356x/Library/CruLib/CruLib.inf
   GpioLib|Silicon/Rockchip/Rk356x/Library/GpioLib/GpioLib.inf
   I2cLib|Silicon/Rockchip/Rk356x/Library/I2cLib/I2cLib.inf
+  FspiLib|Silicon/Rockchip/Rk356x/Library/FspiLib/FspiLib.inf
   MultiPhyLib|Silicon/Rockchip/Rk356x/Library/MultiPhyLib/MultiPhyLib.inf
   OtpLib|Silicon/Rockchip/Rk356x/Library/OtpLib/OtpLib.inf
   Pcie30PhyLib|Silicon/Rockchip/Rk356x/Library/Pcie30PhyLib/Pcie30PhyLib.inf
@@ -499,10 +500,10 @@
   gRk356xTokenSpaceGuid.PcdEmmcForceHighSpeed|TRUE
 
   #
-  # RTC support (hym8563 at 0x51 on I2C5)
+  # RTC support (RX8025T at 0x32 on I2C5)
   #
   gRk356xTokenSpaceGuid.PcdRtcI2cBusBase|0xFE5E0000
-  gRk356xTokenSpaceGuid.PcdRtcI2cAddr|0x51
+  gRk356xTokenSpaceGuid.PcdRtcI2cAddr|0x32
 
 [PcdsDynamicHii.common.DEFAULT]
 
@@ -582,7 +583,7 @@
   EmbeddedPkg/ResetRuntimeDxe/ResetRuntimeDxe.inf
   EmbeddedPkg/RealTimeClockRuntimeDxe/RealTimeClockRuntimeDxe.inf {
     <LibraryClasses>
-      RealTimeClockLib|Silicon/Rockchip/Rk356x/Library/Hym8563RtcLib/RtcLib.inf
+      RealTimeClockLib|Silicon/Rockchip/Rk356x/Library/Rx8025RtcLib/RtcLib.inf
   }
   EmbeddedPkg/MetronomeDxe/MetronomeDxe.inf
 

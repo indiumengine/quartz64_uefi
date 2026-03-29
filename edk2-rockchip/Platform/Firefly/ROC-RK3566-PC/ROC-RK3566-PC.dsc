@@ -481,7 +481,7 @@
   # RTC support (hym8563 at 0x51 on I2C2)
   #
   gRk356xTokenSpaceGuid.PcdRtcI2cBusBase|0xFE5B0000
-  gRk356xTokenSpaceGuid.PcdRtcI2cAddr|0x51
+  gRk356xTokenSpaceGuid.PcdRtcI2cAddr|0x32
 
 
 [PcdsDynamicHii.common.DEFAULT]
