@@ -399,14 +399,14 @@ InitializePciHost (
   GpioPinSetDirection (PCIE_RESET_GPIO_BANK, PCIE_RESET_GPIO_PIN, GPIO_PIN_OUTPUT);
   GpioPinWrite (PCIE_RESET_GPIO_BANK, PCIE_RESET_GPIO_PIN, FALSE);
 
-  DEBUG ((DEBUG_INFO, "PCIe: Start LTSSM\n"));
-
-  PciEnableLtssm (ApbBase, TRUE);
-
+  
   gBS->Stall (100000);
   DEBUG ((DEBUG_INFO, "PCIe: Deassert reset\n"));
   GpioPinWrite (PCIE_RESET_GPIO_BANK, PCIE_RESET_GPIO_PIN, TRUE);
+  gBS->Stall (500000);
 
+  DEBUG ((DEBUG_INFO, "PCIe: Start LTSSM\n"));
+  PciEnableLtssm (ApbBase, TRUE);
   /* Wait for link up */
   DEBUG ((DEBUG_INFO, "PCIe: Waiting for link up...\n"));
   for (Retry = 20; Retry != 0; Retry--) {

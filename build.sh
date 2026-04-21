@@ -118,6 +118,10 @@ for board in ${RKUEFIBOARDS}; do
 		build_uefi HardKernel Odroid-M1S
 		build_fit Odroid-M1S rk3566-hardkernel-odroid-m1s
 		;;
+	E4AP5G1LTS)
+		build_uefi IndiumEngine E4AP5G1LTS
+		build_fit E4AP5G1LTS rk3568-indiumengine-e4ap5g1lts
+		;;
 	*)
 		echo "Unknown board ${board}"
 		exit 1
