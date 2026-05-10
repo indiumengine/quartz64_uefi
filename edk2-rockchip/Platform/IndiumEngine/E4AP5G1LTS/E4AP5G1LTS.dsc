@@ -500,12 +500,6 @@
   gRk356xTokenSpaceGuid.PcdCpuVoltageUVolBase|712500
   gRk356xTokenSpaceGuid.PcdCpuVoltageUVolStep|12500
 
-  #
-  # RTC support (hym8563 at 0x51 on I2C5)
-  #
-  gRk356xTokenSpaceGuid.PcdRtcI2cBusBase|0xFE5E0000
-  gRk356xTokenSpaceGuid.PcdRtcI2cAddr|0x51
-
 [PcdsDynamicHii.common.DEFAULT]
 
   #
@@ -516,7 +510,7 @@
   #
   # ConfigDxe
   #
-  gRk356xTokenSpaceGuid.PcdSystemTableMode|L"SystemTableMode"|gConfigDxeFormSetGuid|0x0|0
+  gRk356xTokenSpaceGuid.PcdSystemTableMode|L"SystemTableMode"|gConfigDxeFormSetGuid|0x0|2
   gRk356xTokenSpaceGuid.PcdCpuClock|L"CpuClock"|gConfigDxeFormSetGuid|0x0|2
   gRk356xTokenSpaceGuid.PcdCustomCpuClock|L"CustomCpuClock"|gConfigDxeFormSetGuid|0x0|816
 
