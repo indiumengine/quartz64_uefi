@@ -122,6 +122,10 @@ for board in ${RKUEFIBOARDS}; do
 		build_uefi IndiumEngine E4AP5G1LTS
 		build_fit E4AP5G1LTS rk3568-indiumengine-e4ap5g1lts
 		;;
+	E4AP5G1)
+		build_uefi IndiumEngine E4AP5G1
+		build_fit E4AP5G1 rk3568-indiumengine-e4ap5g1
+		;;
 	*)
 		echo "Unknown board ${board}"
 		exit 1
