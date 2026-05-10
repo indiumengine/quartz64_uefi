@@ -1,5 +1,6 @@
 /** @file
  *
+ *  Copyright (c) 2026, Jack Pan <panxingyu@indiumengine.com>
  *  Copyright (c) 2021, Jared McNeill <jmcneill@invisible.ca>
  *  Copyright (c) 2017,2021 Andrey Warkentin <andrey.warkentin@gmail.com>
  *  Copyright (c) 2016, Linaro, Ltd. All rights reserved.
@@ -16,6 +17,7 @@
 #include <Library/MemoryAllocationLib.h>
 #include <Library/UefiBootServicesTableLib.h>
 #include <Library/UefiLib.h>
+#include <Library/OtpLib.h>
 #include <IndustryStandard/Rk356x.h>
 #include <libfdt.h>
 #include <Guid/Fdt.h>
@@ -112,6 +114,92 @@ FixMultiPhy1Mode (
 }
 #endif
 
+// 将 MacLo/MacHi 转换为 6 字节数组（小端序）
+STATIC VOID MacLoHiToBytes(IN UINT32 MacLo, IN UINT32 MacHi, OUT UINT8 MacAddress[6]) {
+    MacAddress[0] = (UINT8)(MacLo >> 0);
+    MacAddress[1] = (UINT8)(MacLo >> 8);
+    MacAddress[2] = (UINT8)(MacLo >> 16);
+    MacAddress[3] = (UINT8)(MacLo >> 24);
+    MacAddress[4] = (UINT8)(MacHi >> 0);
+    MacAddress[5] = (UINT8)(MacHi >> 8);
+}
+
+// 向设备树节点添加 MAC 地址
+STATIC EFI_STATUS AddMacToFdtNode(IN VOID *FdtBlob, IN CHAR8 *NodePath, IN UINT8 MacAddress[6]) {
+    INT32 NodeOffset;
+    INT32 Ret;
+
+    NodeOffset = fdt_path_offset(FdtBlob, NodePath);
+    if (NodeOffset < 0) {
+        DEBUG((DEBUG_WARN, "FDT: Node %a not found (error=%d)\n", NodePath, NodeOffset));
+        return EFI_NOT_FOUND;
+    }
+
+    // 删除已存在的属性
+    if (fdt_getprop(FdtBlob, NodeOffset, "mac-address", NULL)) {
+        fdt_delprop(FdtBlob, NodeOffset, "mac-address");
+    }
+    if (fdt_getprop(FdtBlob, NodeOffset, "local-mac-address", NULL)) {
+        fdt_delprop(FdtBlob, NodeOffset, "local-mac-address");
+    }
+
+    // 添加新属性
+    Ret = fdt_setprop(FdtBlob, NodeOffset, "mac-address", MacAddress, 6);
+    if (Ret != 0) {
+        DEBUG((DEBUG_ERROR, "FDT: Failed to set mac-address for %a, error=%d\n", NodePath, Ret));
+        return EFI_DEVICE_ERROR;
+    }
+    Ret = fdt_setprop(FdtBlob, NodeOffset, "local-mac-address", MacAddress, 6);
+    if (Ret != 0) {
+        DEBUG((DEBUG_WARN, "FDT: Failed to set local-mac-address for %a\n", NodePath));
+    }
+
+    DEBUG((DEBUG_INFO, "FDT: MAC %02X:%02X:%02X:%02X:%02X:%02X -> %a\n",
+           MacAddress[0], MacAddress[1], MacAddress[2],
+           MacAddress[3], MacAddress[4], MacAddress[5], NodePath));
+
+    return EFI_SUCCESS;
+}
+
+// 为 GMAC0 和 GMAC1 注入 MAC 地址
+STATIC EFI_STATUS InjectMacAddresses(IN VOID *FdtBlob) {
+    EFI_STATUS Status;
+    UINT32 MacLo, MacHi;
+    UINT32 MacHiGmac0, MacHiGmac1;
+    UINT8 MacAddress[6];
+
+    // 从 OTP 获取基础 MAC 地址
+    OtpGetMacAddress(&MacLo, &MacHi);
+  
+    // GMAC0：清除第8位（偶数 MAC），与寄存器写入逻辑一致
+    MacHiGmac0 = MacHi & ~(1 << 8);
+    MacLoHiToBytes(MacLo, MacHiGmac0, MacAddress);
+
+    // 尝试注入 GMAC0
+    Status = AddMacToFdtNode(FdtBlob, "/ethernet@fe2a0000", MacAddress);
+    if (EFI_ERROR(Status)) {
+        Status = AddMacToFdtNode(FdtBlob, "/gmac0", MacAddress);
+    }
+    if (EFI_ERROR(Status)) {
+        DEBUG((DEBUG_WARN, "FDT: No GMAC0 node found for MAC injection\n"));
+    }
+
+    // GMAC1：设置第8位（奇数 MAC），与寄存器写入逻辑一致
+    MacHiGmac1 = MacHi | (1 << 8);
+    MacLoHiToBytes(MacLo, MacHiGmac1, MacAddress);
+
+    // 尝试注入 GMAC1
+    Status = AddMacToFdtNode(FdtBlob, "/ethernet@fe010000", MacAddress);
+    if (EFI_ERROR(Status)) {
+        Status = AddMacToFdtNode(FdtBlob, "/gmac1", MacAddress);
+    }
+    if (EFI_ERROR(Status)) {
+        DEBUG((DEBUG_WARN, "FDT: No GMAC1 node found for MAC injection\n"));
+    }
+
+    return EFI_SUCCESS;
+}
+
 /**
   @param  ImageHandle   of the loaded driver
   @param  SystemTable   Pointer to the System Table
@@ -181,6 +269,8 @@ FdtDxeInitialize (
   if (EFI_ERROR (Status)) {
     Print (L"Failed to fix UART speed: %r\n", Status);
   }
+
+  InjectMacAddresses(mFdtImage);
 
 #ifdef QUARTZ64
   Status = FixMultiPhy1Mode ();
