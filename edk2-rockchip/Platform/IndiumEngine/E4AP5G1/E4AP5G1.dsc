@@ -469,7 +469,11 @@
   gRk356xTokenSpaceGuid.PcdPcieResetGpioPin|17
 
 
-  # TODO: add RTC support 
+  #
+  # RTC support (RX8025 at 0x32 on I2C1)
+  #
+  gRk356xTokenSpaceGuid.PcdRtcI2cBusBase|0xFE5A0000
+  gRk356xTokenSpaceGuid.PcdRtcI2cAddr|0x32
   # TODO: add sdhc0 support
   #
 
@@ -559,7 +563,7 @@
   EmbeddedPkg/ResetRuntimeDxe/ResetRuntimeDxe.inf
   EmbeddedPkg/RealTimeClockRuntimeDxe/RealTimeClockRuntimeDxe.inf {
     <LibraryClasses>
-      RealTimeClockLib|EmbeddedPkg/Library/VirtualRealTimeClockLib/VirtualRealTimeClockLib.inf
+      RealTimeClockLib|Silicon/Rockchip/Rk356x/Library/Rx8025RtcLib/RtcLib.inf
   }
   EmbeddedPkg/MetronomeDxe/MetronomeDxe.inf
 

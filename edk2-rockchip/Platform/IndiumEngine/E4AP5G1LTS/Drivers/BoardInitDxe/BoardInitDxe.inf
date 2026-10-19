@@ -47,8 +47,12 @@
   MultiPhyLib
   OtpLib
   SocLib
+  UefiBootManagerLib
 
 [Protocols]
+
+[Guids]
+  gEfiEndOfDxeEventGroupGuid
 
 [Pcd]
 

@@ -32,7 +32,74 @@
 #include <IndustryStandard/Rk356x.h>
 #include <IndustryStandard/Rk356xCru.h>
 
+#include <Guid/EventGroup.h>
+#include <Library/UefiBootManagerLib.h>
+#include <Protocol/DevicePath.h>
+
 #include "EthernetPhy.h"
+
+#define DP_NODE_LEN(Type)  { (UINT8)sizeof (Type), (UINT8)(sizeof (Type) >> 8) }
+
+#pragma pack (1)
+typedef struct {
+  USB_CLASS_DEVICE_PATH       Keyboard;
+  EFI_DEVICE_PATH_PROTOCOL    End;
+} PLATFORM_USB_KEYBOARD;
+#pragma pack ()
+
+STATIC CONST PLATFORM_USB_KEYBOARD  mUsbKeyboard = {
+  {
+    {
+      MESSAGING_DEVICE_PATH, MSG_USB_CLASS_DP,
+      DP_NODE_LEN (USB_CLASS_DEVICE_PATH)
+    },
+    0xFFFF, // VendorId: any
+    0xFFFF, // ProductId: any
+    3,      // DeviceClass: HID
+    1,      // DeviceSubClass: boot
+    1       // DeviceProtocol: keyboard
+  },
+  {
+    END_DEVICE_PATH_TYPE, END_ENTIRE_DEVICE_PATH_SUBTYPE,
+    DP_NODE_LEN (EFI_DEVICE_PATH_PROTOCOL)
+  }
+};
+
+/**
+  Register the short-form USB keyboard device path as a ConIn device before BDS
+  connects the USB host controllers.
+
+  PlatformBootManagerBeforeConsole() connects the non-discoverable USB host
+  controllers and only afterwards adds the short-form USB keyboard path to
+  ConIn. USB enumeration therefore runs while ConIn does not match the
+  keyboard: ConPlatform closes SimpleTextIn and the USB bus marks the interface
+  as managed, so the keyboard is never re-probed and never reaches ConSplitter.
+  The Caps Lock LED works (UsbKbDxe is bound) but no ESC hotkey is delivered.
+  Adding the path at EndOfDxe makes ConPlatform accept the keyboard during
+  enumeration, before the hotkey service is started.
+
+  @param[in] Event    The EndOfDxe event.
+  @param[in] Context  Not used.
+**/
+STATIC
+VOID
+EFIAPI
+BoardInitEndOfDxeCallback (
+  IN EFI_EVENT  Event,
+  IN VOID       *Context
+  )
+{
+  EFI_STATUS  Status;
+
+  Status = EfiBootManagerUpdateConsoleVariable (
+             ConIn,
+             (EFI_DEVICE_PATH_PROTOCOL *)&mUsbKeyboard,
+             NULL
+             );
+  DEBUG ((DEBUG_INFO, "%a: add USB keyboard to ConIn - %r\n", __func__, Status));
+
+  gBS->CloseEvent (Event);
+}
 
 /*
  * GMAC registers
@@ -337,6 +404,9 @@ BoardInitDriverEntryPoint (
   IN EFI_SYSTEM_TABLE  *SystemTable
   )
 {
+  EFI_STATUS  Status;
+  EFI_EVENT   EndOfDxeEvent;
+
   DEBUG ((DEBUG_INFO, "BOARD: BoardInitDriverEntryPoint() called\n"));
 
   SocSetDomainVoltage (PMUIO2, VCC_3V3);  /* VCC3V3_PMU */
@@ -402,6 +472,20 @@ BoardInitDriverEntryPoint (
 
   /* GMAC setup */
   BoardInitGmac ();
+
+  //
+  // Add the USB keyboard to ConIn before BDS connects the USB host controllers,
+  // so ConPlatform accepts it when the USB bus is enumerated.
+  //
+  Status = gBS->CreateEventEx (
+                  EVT_NOTIFY_SIGNAL,
+                  TPL_CALLBACK,
+                  BoardInitEndOfDxeCallback,
+                  NULL,
+                  &gEfiEndOfDxeEventGroupGuid,
+                  &EndOfDxeEvent
+                  );
+  ASSERT_EFI_ERROR (Status);
 
   DEBUG ((DEBUG_INFO, "INFO: Exit board init.\n"));
 

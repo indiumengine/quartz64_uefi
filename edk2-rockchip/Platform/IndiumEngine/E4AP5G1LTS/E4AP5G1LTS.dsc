@@ -27,6 +27,7 @@
   SKUID_IDENTIFIER               = DEFAULT
   FLASH_DEFINITION               = Platform/Rockchip/Rk356x/Rk356x.fdf
   BOARD_DXE_FV_COMPONENTS        = Platform/IndiumEngine/E4AP5G1LTS/E4AP5G1LTS.fdf.inc
+  DEFINE PCIE_ENABLE             = FALSE
 
   #
   # Defines for default states.  These can be changed on the command line.
@@ -485,7 +486,11 @@
   gRk356xTokenSpaceGuid.PcdPcie30PhyLane0LinkNum|1
   gRk356xTokenSpaceGuid.PcdPcie30PhyLane1LinkNum|1
 
-  # TODO: add RTC support 
+  #
+  # RTC support (RX8025 at 0x32 on I2C1)
+  #
+  gRk356xTokenSpaceGuid.PcdRtcI2cBusBase|0xFE5A0000
+  gRk356xTokenSpaceGuid.PcdRtcI2cAddr|0x32
   # TODO: add sdhc0 support
   #
   # Limit eMMC to 52 MHz
@@ -578,7 +583,7 @@
   EmbeddedPkg/ResetRuntimeDxe/ResetRuntimeDxe.inf
   EmbeddedPkg/RealTimeClockRuntimeDxe/RealTimeClockRuntimeDxe.inf {
     <LibraryClasses>
-      RealTimeClockLib|EmbeddedPkg/Library/VirtualRealTimeClockLib/VirtualRealTimeClockLib.inf
+      RealTimeClockLib|Silicon/Rockchip/Rk356x/Library/Rx8025RtcLib/RtcLib.inf
   }
   EmbeddedPkg/MetronomeDxe/MetronomeDxe.inf
 
@@ -672,11 +677,13 @@
   #
   # PCI Support
   #
-  MdeModulePkg/Bus/Pci/PciHostBridgeDxe/PciHostBridgeDxe.inf
-  MdeModulePkg/Bus/Pci/PciBusDxe/PciBusDxe.inf
-  EmbeddedPkg/Drivers/NonCoherentIoMmuDxe/NonCoherentIoMmuDxe.inf
-  MdeModulePkg/Bus/Pci/NvmExpressDxe/NvmExpressDxe.inf
-
+  !if $(PCIE_ENABLE) == TRUE
+    MdeModulePkg/Bus/Pci/PciHostBridgeDxe/PciHostBridgeDxe.inf
+    MdeModulePkg/Bus/Pci/PciBusDxe/PciBusDxe.inf
+    EmbeddedPkg/Drivers/NonCoherentIoMmuDxe/NonCoherentIoMmuDxe.inf
+    MdeModulePkg/Bus/Pci/NvmExpressDxe/NvmExpressDxe.inf
+  !endif
+  
   #
   # AHCI Support
   #
