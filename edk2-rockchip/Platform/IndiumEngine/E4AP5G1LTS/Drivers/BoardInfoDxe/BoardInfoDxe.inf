@@ -1,0 +1,60 @@
+#/** @file
+#
+#  Display-only "Board Information" page for the Device Manager.
+#
+#  Copyright (c) 2026, IndiumEngine
+#
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+#**/
+
+[Defines]
+  INF_VERSION                    = 0x0001001A
+  BASE_NAME                      = BoardInfoDxe
+  FILE_GUID                      = b1a2c3d4-5e6f-4a7b-8c9d-1e2f3a4b5c6d
+  MODULE_TYPE                    = DXE_DRIVER
+  VERSION_STRING                 = 1.0
+  ENTRY_POINT                    = BoardInfoDxeInitialize
+
+#
+# The following information is for reference only and not required by the build
+# tools.
+#
+#  VALID_ARCHITECTURES           = AARCH64
+#
+
+[Sources]
+  BoardInfoDxe.c
+  BoardInfoFormSetGuid.h
+  BoardInfoHii.vfr
+  BoardInfoHii.uni
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+  Silicon/Rockchip/Rk356x/Rk356x.dec
+
+[LibraryClasses]
+  BaseLib
+  BaseMemoryLib
+  DebugLib
+  HiiLib
+  MemoryAllocationLib
+  PrintLib
+  UefiBootServicesTableLib
+  UefiDriverEntryPoint
+  UefiLib
+  OtpLib
+
+[Guids]
+  gBoardInfoFormSetGuid
+  gEfiIfrFrontPageGuid                          # Show the page on the UiApp front page
+
+[Protocols]
+  gEfiDevicePathProtocolGuid                    # PROTOCOL PRODUCED
+  gEfiHiiConfigAccessProtocolGuid               # PROTOCOL PRODUCED
+  gEfiHiiDatabaseProtocolGuid                   # PROTOCOL CONSUMED
+  gEdkiiSpiNorFlashInfoProtocolGuid             # PROTOCOL CONSUMED
+
+[Depex]
+  gEdkiiSpiNorFlashInfoProtocolGuid AND gEfiHiiDatabaseProtocolGuid

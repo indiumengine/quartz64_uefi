@@ -4,13 +4,29 @@
  * Copyright (c) 2020-2021 Rockchip Electronics Co., Ltd.
  */
 
-#include "Soc.h"
 #include <Library/DebugLib.h>
 #include <Library/IoLib.h>
 #include <Library/PcdLib.h>
 #include <Library/TimerLib.h>
 #include <Library/SpiMem.h>
-#include <Library/Fspi.h>
+#include <Library/FspiLib.h>
+#include <IndustryStandard/Rk356xFspi.h>
+
+/*
+ * HAL shims: the original Rockchip HAL was written against the vendor Soc.h.
+ * Provide the small glue layer it expects on top of MdePkg.
+ */
+#define __IO  volatile
+#define WRITE_REG(addr, val)       MmioWrite32 ((UINTN)&(addr), (UINT32)(val))
+#define HAL_CPUDelayUs(us)         MicroSecondDelay (us)
+#define HAL_ASSERT(expr)           ASSERT (expr)
+/*
+ * host->instance holds the physical FSPI_BASE until SetVirtualAddressMap and
+ * its runtime virtual address afterwards (DXE runtime drivers convert the
+ * pointer in their VA-change handler), so it cannot be compared against a
+ * physical constant here. NULL is the only invalid value.
+ */
+#define IS_FSPI_INSTANCE(instance) ((instance) != NULL)
 
 #define HAL_IS_ALIGNED(x, a)  (((x) & (a - 1)) == 0)
 /********************* Private MACRO Definition ******************************/
@@ -58,10 +74,6 @@
 #define FSPI_RISR_TRANSS_ACTIVE  (1 << FSPI_RISR_TRANSS_SHIFT)
 
 /* FSPI attributes */
-#define FSPI_VER_VER_1  1
-#define FSPI_VER_VER_3  3
-#define FSPI_VER_VER_5  5
-
 #define FSPI_NOR_FLASH_PAGE_SIZE  0x100
 
 #define FSPI_MAX_IOSIZE_VER3  (1024U * 8)
@@ -77,8 +89,8 @@ typedef union {
     unsigned    rxempty       : 1; /* rx fifo empty */
     unsigned    rxfull        : 1; /* tx fifo empty interrupt mask */
     unsigned    reserved7_4   : 4;
-    unsigned    txlevel       : 5; /* tx fifo: 0: full; 1: left 1 entry; ... */
-    unsigned    reserved15_13 : 3;
+    unsigned    txlevel       : 6; /* tx fifo: 0: full; 1: left 1 entry; ... */
+    unsigned    reserved15_14 : 2;
     unsigned    rxlevel       : 5; /* rx fifo: 0: full; 1: left 1 entry; ... */
     unsigned    reserved31_21 : 11;
   } b;
@@ -229,6 +241,7 @@ HAL_FSPI_XferStart (
 
   /* spitial setting */
   FSPICtrl.b.sps = host->mode & HAL_SPI_CPHA;
+  FSPICtrl.d32  |= FSPI_CTRL_WPEN;
   FSPICmd.b.cs   = host->cs;
   if ((op->data.nbytes == 0) && op->addr.nbytes) {
     FSPICmd.b.rw = FSPI_WRITE;
@@ -289,11 +302,11 @@ HAL_FSPI_XferData (
 
   if (len && (len < 4) && (dir == FSPI_WRITE)) {
     if (len == 1) {
-      temp = *((uint8_t *)data);
+      temp = *((UINT8 *)data);
     } else if (len == 2) {
-      temp = *((uint16_t *)data);
+      temp = *((UINT16 *)data);
     } else {
-      temp = ((uint8_t *)data)[0] | ((uint8_t *)data)[1] << 8 | ((uint8_t *)data)[2] << 16;
+      temp = ((UINT8 *)data)[0] | ((UINT8 *)data)[1] << 8 | ((UINT8 *)data)[2] << 16;
     }
 
     pData = &temp;
@@ -380,10 +393,10 @@ HAL_FSPI_XferData (
     while (bytes) {
       fifostat.d32 = pReg->FSR;
       if (fifostat.b.rxlevel > 0) {
-        uint8_t  *pData1 = (uint8_t *)pData;
+        UINT8  *pData1 = (UINT8 *)pData;
         words = pReg->DATA;
         for (i = 0; i < bytes; i++) {
-          pData1[i] = (uint8_t)((words >> (i * 8)) & 0xFF);
+          pData1[i] = (UINT8)((words >> (i * 8)) & 0xFF);
         }
 
         break;
@@ -490,8 +503,7 @@ HAL_FSPI_Init (
 
   HAL_ASSERT (IS_FSPI_INSTANCE (host->instance));
 
-  pReg       = host->instance;
-  pReg->MODE = 0;
+  pReg = host->instance;
   while (pReg->SR & FSPI_SR_SR_BUSY) {
     HAL_CPUDelayUs (1);
     if (timeout++ > 1000) {
@@ -521,7 +533,6 @@ HAL_FSPI_DeInit (
 {
   HAL_ASSERT (IS_FSPI_INSTANCE (host->instance));
 
-  host->instance->MODE = 0;
   FSPI_ContModeDeInit (host);
   FSPI_Reset (host);
 
@@ -537,7 +548,7 @@ HAL_FSPI_DeInit (
 RETURN_STATUS
 HAL_FSPI_SetDelayLines (
   struct HAL_FSPI_HOST  *host,
-  uint8_t               cells
+  UINT8               cells
   )
 {
   HAL_ASSERT (IS_FSPI_INSTANCE (host->instance));

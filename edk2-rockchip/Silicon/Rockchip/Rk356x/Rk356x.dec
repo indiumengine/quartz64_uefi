@@ -15,8 +15,14 @@
 [Includes]
   Include
 
+[Protocols]
+  ## Include/Protocol/SpiNorFlashInfo.h
+  gEdkiiSpiNorFlashInfoProtocolGuid = {0x7b3c1a9d, 0x4f2e, 0x4b8a, {0xa3, 0x6c, 0x1e, 0x8f, 0x52, 0xd4, 0x9b, 0x07}}
+
 [Guids]
   gRk356xTokenSpaceGuid = {0x44045e56, 0x7056, 0x4be6, {0x88, 0xc0, 0x49, 0x0c, 0x6b, 0x90, 0xbf, 0xbb}}
+  ## Board Information formset (E4AP5G1LTS BoardInfoDxe)
+  gBoardInfoFormSetGuid = {0xe5a6f4c1, 0x2b8d, 0x4e3a, {0x9f, 0x1c, 0x7d, 0x2b, 0xa8, 0xe4, 0x51, 0x96}}
 
 [PcdsFixedAtBuild.common]
   # Pcds for USB
@@ -83,3 +89,6 @@
   # Pcds for UART
   gRk356xTokenSpaceGuid.PcdUart3Status|0|UINT8|0x00000090
   gRk356xTokenSpaceGuid.PcdUart4Status|0|UINT8|0x00000091
+  # Pcds for SPI NOR
+  ## NOR offset of the UEFI variable region. 0 = automatic (top of flash).
+  gRk356xTokenSpaceGuid.PcdSpiNorVariableBase|0|UINT32|0x00000092

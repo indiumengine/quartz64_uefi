@@ -60,6 +60,18 @@ EFI_GUID mMshcDevicePathGuid = EFI_CALLER_ID_GUID;
 STATIC UINT32 mMshcCommand;
 STATIC UINT32 mMshcArgument;
 
+//
+// A board with no card on this controller used to make MmcDxe retry the
+// whole identification sequence up to MAX_RETRY_COUNT (1000) times, on
+// every connect.  Probe the card once when the driver loads instead: after
+// this many consecutive command failures the host is marked dead and the
+// MMC stack stays idle.
+//
+#define MSHC_PROBE_RETRIES       5
+
+STATIC BOOLEAN  mNoCard             = FALSE;
+STATIC UINTN    mConsecutiveErrors  = 0;
+
 EFI_STATUS
 MshcReadBlockData (
   IN EFI_MMC_HOST_PROTOCOL     *This,
@@ -90,7 +102,7 @@ MshcIsCardPresent (
   IN EFI_MMC_HOST_PROTOCOL     *This
   )
 {
-  return TRUE;
+  return !mNoCard;
 }
 
 BOOLEAN
@@ -200,18 +212,13 @@ MshcSetClock (
 }
 
 EFI_STATUS
-MshcNotifyState (
-  IN EFI_MMC_HOST_PROTOCOL     *This,
-  IN MMC_STATE                 State
+MshcHwInit (
+  VOID
   )
 {
   UINT32      Data;
   EFI_STATUS  Status;
 
-  switch (State) {
-  case MmcInvalidState:
-    return EFI_INVALID_PARAMETER;
-  case MmcHwInitializationState:
     MmioWrite32 (DWEMMC_PWREN, 1);
 
     // If device already turn on then restart it
@@ -239,7 +246,23 @@ MshcNotifyState (
     do {
       Data = MmioRead32 (DWEMMC_BMOD);
     } while (Data & DWEMMC_IDMAC_SWRESET);
-    break;
+  return EFI_SUCCESS;
+}
+
+EFI_STATUS
+MshcNotifyState (
+  IN EFI_MMC_HOST_PROTOCOL     *This,
+  IN MMC_STATE                 State
+  )
+{
+  switch (State) {
+  case MmcInvalidState:
+    return EFI_INVALID_PARAMETER;
+  case MmcHwInitializationState:
+    if (mNoCard) {
+      return EFI_DEVICE_ERROR;
+    }
+    return MshcHwInit ();
   case MmcIdleState:
     break;
   case MmcReadyState:
@@ -319,15 +342,25 @@ SendCommand (
     Data = MmioRead32 (DWEMMC_RINTSTS);
 
     if (Status == EFI_SUCCESS && (Data & ErrMask) != 0) {
+      mConsecutiveErrors++;
       DEBUG ((DEBUG_INFO, "%a(): EFI_DEVICE_ERROR DWEMMC_RINTSTS=0x%x MmcCmd 0x%x(%d),Argument 0x%x\n",
           __func__, Data, MmcCmd, MmcCmd&0x3f, Argument));
       Status = EFI_DEVICE_ERROR;
       // Keep spinning until CMD done bit is set.
+      if ((mConsecutiveErrors >= MSHC_PROBE_RETRIES) && !mNoCard) {
+        mNoCard = TRUE;
+        DEBUG ((DEBUG_ERROR, "MshcDxe: %u consecutive command timeouts, disabling MMC host\n", mConsecutiveErrors));
+      }
     }
     if (Data & DWEMMC_INT_DTO) {     // Transfer Done
       break;
     }
   } while (!(Data & DWEMMC_INT_CMD_DONE));
+
+  if (!EFI_ERROR (Status)) {
+    mConsecutiveErrors = 0;
+  }
+
   return Status;
 }
 
@@ -340,6 +373,10 @@ MshcSendCommand (
 {
   UINT32       Cmd = 0;
   EFI_STATUS   Status = EFI_SUCCESS;
+
+  if (mNoCard) {
+    return EFI_NO_MEDIA;
+  }
 
   switch (MMC_GET_INDX(MmcCmd)) {
   case MMC_INDX(0):
@@ -431,6 +468,50 @@ MshcSendCommand (
     Status = SendCommand (Cmd, Argument);
   }
   return Status;
+}
+
+/**
+  Probe the card once, after the controller has been initialized.
+
+  SD/SDIO cards answer CMD55, MMC/eMMC cards answer CMD1.  If neither
+  answers after MSHC_PROBE_RETRIES attempts, mNoCard is latched so the host
+  reports "no card" from then on and MmcDxe never starts its 1000-iteration
+  identification loop.
+**/
+STATIC
+VOID
+MshcProbeCard (
+  VOID
+  )
+{
+  UINTN       Attempt;
+  EFI_STATUS  Status;
+
+  //
+  // Reset the card to the idle state; CMD0 has no response.
+  //
+  SendCommand (BIT_CMD_USE_HOLD_REG | BIT_CMD_START | MMC_GET_INDX (MMC_CMD0), 0);
+
+  for (Attempt = 0; Attempt < MSHC_PROBE_RETRIES; Attempt++) {
+    if (mNoCard) {
+      break;
+    }
+
+    Status = MshcSendCommand (NULL, MMC_CMD55, 0);
+    if (!EFI_ERROR (Status)) {
+      return;
+    }
+
+    Status = MshcSendCommand (NULL, MMC_CMD1, EMMC_CMD1_CAPACITY_GREATER_THAN_2GB);
+    if (!EFI_ERROR (Status)) {
+      return;
+    }
+  }
+
+  if (!mNoCard) {
+    mNoCard = TRUE;
+    DEBUG ((DEBUG_ERROR, "MshcDxe: no card response after %u attempts, disabling MMC host\n", MSHC_PROBE_RETRIES));
+  }
 }
 
 EFI_STATUS
@@ -792,6 +873,16 @@ MshcDxeInitialize (
   }
 
   MshcAdjustFifoThreshold ();
+
+  //
+  // Bring the controller up and probe the card once.  Without this, a board
+  // with no card (or an unresponsive eMMC) makes MmcDxe retry the whole
+  // identification sequence hundreds of times on every connect.
+  //
+  Status = MshcHwInit ();
+  if (!EFI_ERROR (Status)) {
+    MshcProbeCard ();
+  }
 
   //Publish Component Name, BlockIO protocol interfaces
   Status = gBS->InstallMultipleProtocolInterfaces (

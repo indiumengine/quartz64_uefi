@@ -28,6 +28,7 @@
   FLASH_DEFINITION               = Platform/Rockchip/Rk356x/Rk356x.fdf
   BOARD_DXE_FV_COMPONENTS        = Platform/IndiumEngine/E4AP5G1LTS/E4AP5G1LTS.fdf.inc
   DEFINE PCIE_ENABLE             = FALSE
+  DEFINE NOR_VAR_SUPPORT         = TRUE
 
   #
   # Defines for default states.  These can be changed on the command line.
@@ -120,6 +121,7 @@
   # Rockchip SoC libraries
   CpuVoltageLib|Silicon/Rockchip/Rk356x/Library/Tsc4525CpuVoltageLib/CpuVoltageLib.inf
   CruLib|Silicon/Rockchip/Rk356x/Library/CruLib/CruLib.inf
+  FspiLib|Silicon/Rockchip/Rk356x/Library/FspiLib/FspiLib.inf
   GpioLib|Silicon/Rockchip/Rk356x/Library/GpioLib/GpioLib.inf
   I2cLib|Silicon/Rockchip/Rk356x/Library/I2cLib/I2cLib.inf
   MultiPhyLib|Silicon/Rockchip/Rk356x/Library/MultiPhyLib/MultiPhyLib.inf
@@ -566,7 +568,7 @@
   #
   ArmPkg/Drivers/CpuDxe/CpuDxe.inf
   MdeModulePkg/Core/RuntimeDxe/RuntimeDxe.inf
-  Platform/Rockchip/Rk356x/Drivers/VarBlockServiceDxe/VarBlockServiceDxe.inf
+  Platform/Rockchip/Rk356x/Drivers/SpiNorFlashDxe/SpiNorFlashDxe.inf
   MdeModulePkg/Universal/FaultTolerantWriteDxe/FaultTolerantWriteDxe.inf {
     <LibraryClasses>
       VariableFlashInfoLib|MdeModulePkg/Library/BaseVariableFlashInfoLib/BaseVariableFlashInfoLib.inf
@@ -574,7 +576,6 @@
   MdeModulePkg/Universal/Variable/RuntimeDxe/VariableRuntimeDxe.inf {
     <LibraryClasses>
       NULL|MdeModulePkg/Library/VarCheckUefiLib/VarCheckUefiLib.inf
-      DebugLib|MdePkg/Library/BaseDebugLibNull/BaseDebugLibNull.inf
       VariableFlashInfoLib|MdeModulePkg/Library/BaseVariableFlashInfoLib/BaseVariableFlashInfoLib.inf
   }
   MdeModulePkg/Universal/SecurityStubDxe/SecurityStubDxe.inf
@@ -615,6 +616,18 @@
   # Board specific
   #
   Platform/IndiumEngine/E4AP5G1LTS/Drivers/BoardInitDxe/BoardInitDxe.inf
+  Platform/IndiumEngine/E4AP5G1LTS/Drivers/BoardInfoDxe/BoardInfoDxe.inf {
+    <LibraryClasses>
+      #
+      # OtpLib pulls in BaseCryptLib -> RngLib, and the platform RngLib is
+      # DxeRngLib, which adds gEfiRngProtocolGuid to this module's depex. The
+      # only producer is TrngDxe, and this page must not depend on the TRNG
+      # being present/working. This driver never generates keys, so the null
+      # instance is enough and keeps the depex down to what is really needed.
+      # (Libraries can only be overridden per module in the DSC, not in INF.)
+      #
+      RngLib|MdePkg/Library/BaseRngLibNull/BaseRngLibNull.inf
+  }
 
   #
   # Config

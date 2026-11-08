@@ -29,7 +29,9 @@ typedef union {
     unsigned    datalines     : 2; /**< data bits number */
     unsigned    reserved14_15 : 2;
     unsigned    addrbits      : 5;
-    unsigned    reserved31_21 : 11;
+    unsigned    reserved21_28 : 8;
+    unsigned    wpen          : 1; /**< write protection enable */
+    unsigned    reserved30_31 : 2;
   } b;
 } FSPICTRL_DATA;
 

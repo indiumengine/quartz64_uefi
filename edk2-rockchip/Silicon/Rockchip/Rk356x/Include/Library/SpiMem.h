@@ -114,26 +114,26 @@ enum SPI_MEM_DATA_DIR {
 
 struct HAL_SPI_MEM_OP {
   struct {
-    uint8_t    buswidth;
-    uint8_t    opcode;
+    UINT8     buswidth;
+    UINT8     opcode;
   } cmd;
 
   struct {
-    uint8_t     nbytes;
-    uint8_t     buswidth;
-    uint32_t    val;
+    UINT8      nbytes;
+    UINT8      buswidth;
+    UINT32     val;
   } addr;
 
   struct {
-    uint8_t    a2dIdle;
-    uint8_t    nbytes;
-    uint8_t    buswidth;
+    UINT8     a2dIdle;
+    UINT8     nbytes;
+    UINT8     buswidth;
   } dummy;
 
   struct {
-    uint8_t                  buswidth;
+    UINT8                   buswidth;
     enum SPI_MEM_DATA_DIR    dir;
-    unsigned int             nbytes;
+    UINTN                    nbytes;
     /**< buf.{in,out} must be DMA-able. */
     union {
       void          *in;
@@ -143,12 +143,12 @@ struct HAL_SPI_MEM_OP {
 };
 
 #define HAL_SPI_MEM_OP(__cmd, __addr, __dummy, __data) \
-    {                                                  \
+    ((struct HAL_SPI_MEM_OP) {                         \
         .cmd = __cmd,                                  \
         .addr = __addr,                                \
         .dummy = __dummy,                              \
         .data = __data,                                \
-    }
+    })
 
 #endif
 

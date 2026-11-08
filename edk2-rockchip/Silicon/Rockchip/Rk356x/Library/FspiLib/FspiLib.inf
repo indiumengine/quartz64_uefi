@@ -28,12 +28,13 @@
 [LibraryClasses]
   DebugLib
   IoLib
+  PcdLib
   TimerLib
 
 [Packages]
   MdePkg/MdePkg.dec
   MdeModulePkg/MdeModulePkg.dec
-  Silicon/Rockchip/RockchipPkg.dec
+  Silicon/Rockchip/Rk356x/Rk356x.dec
 
 [Pcd]
 

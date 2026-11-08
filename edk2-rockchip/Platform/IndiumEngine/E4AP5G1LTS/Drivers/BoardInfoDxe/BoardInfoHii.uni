@@ -1,0 +1,36 @@
+/** @file
+ *
+ *  Copyright (c) 2026, IndiumEngine
+ *
+ *  SPDX-License-Identifier: BSD-2-Clause-Patent
+ *
+ **/
+
+#langdef en-US  "English"
+
+#string STR_NULL_STRING          #language en-US ""
+
+#string STR_FORM_SET_TITLE       #language en-US "Board Information"
+#string STR_FORM_SET_TITLE_HELP  #language en-US "Show board and SPI NOR flash information."
+#string STR_FORM_TITLE           #language en-US "Board Information"
+
+#string STR_NOR_HELP             #language en-US "SPI NOR flash information"
+
+#string STR_NOR_VENDOR           #language en-US "NOR Flash Vendor:"
+#string STR_NOR_VENDOR_VALUE     #language en-US "N/A"
+#string STR_NOR_MODEL            #language en-US "NOR Flash Model:"
+#string STR_NOR_MODEL_VALUE      #language en-US "N/A"
+#string STR_NOR_JEDEC            #language en-US "JEDEC ID:"
+#string STR_NOR_JEDEC_VALUE      #language en-US "N/A"
+#string STR_NOR_CAPACITY         #language en-US "Capacity:"
+#string STR_NOR_CAPACITY_VALUE   #language en-US "N/A"
+#string STR_NOR_REGION           #language en-US "Variable Region Offset:"
+#string STR_NOR_REGION_VALUE     #language en-US "N/A"
+
+#string STR_SERIAL_HELP          #language en-US "Board serial number"
+#string STR_SERIAL               #language en-US "Serial Number:"
+#string STR_SERIAL_VALUE         #language en-US "N/A"
+
+#string STR_MAC_HELP             #language en-US "Board MAC address"
+#string STR_MAC                  #language en-US "MAC Address:"
+#string STR_MAC_VALUE            #language en-US "N/A"

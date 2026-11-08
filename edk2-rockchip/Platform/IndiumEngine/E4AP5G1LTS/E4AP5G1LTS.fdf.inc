@@ -27,3 +27,8 @@ INF RuleOverride = ACPITABLE Platform/Rockchip/Rk356x/AcpiTables/$(PLATFORM_NAME
 #
 INF Platform/Rockchip/Rk356x/Drivers/PlatformSmbiosDxe/PlatformSmbiosDxe.inf
 INF MdeModulePkg/Universal/SmbiosDxe/SmbiosDxe.inf
+
+#
+# Board Information page (Device Manager)
+#
+INF Platform/IndiumEngine/E4AP5G1LTS/Drivers/BoardInfoDxe/BoardInfoDxe.inf

@@ -1,0 +1,82 @@
+/** @file
+ *
+ *  Display-only "Board Information" form. Values are filled in at runtime
+ *  by BoardInfoDxe via HiiSetString, so no variable store is needed.
+ *
+ *  Copyright (c) 2026, IndiumEngine
+ *
+ *  SPDX-License-Identifier: BSD-2-Clause-Patent
+ *
+ **/
+
+#include "BoardInfoFormSetGuid.h"
+
+formset
+    guid      = BOARD_INFO_FORM_SET_GUID,
+    title     = STRING_TOKEN(STR_FORM_SET_TITLE),
+    help      = STRING_TOKEN(STR_FORM_SET_TITLE_HELP),
+    //
+    // The UiApp front page (the ESC menu) lists every formset whose class
+    // GUID is gEfiIfrFrontPageGuid, so the page shows up next to "Boot
+    // Manager" and "Device Manager".  The second class GUID makes the form
+    // visible in the Device Manager device list as well.
+    //
+    classguid = gEfiIfrFrontPageGuid | BOARD_INFO_FORM_SET_GUID,
+
+    form formid = 1,
+        title  = STRING_TOKEN(STR_FORM_TITLE);
+        subtitle text = STRING_TOKEN(STR_NULL_STRING);
+
+        text
+          help  = STRING_TOKEN(STR_NOR_HELP),
+          text  = STRING_TOKEN(STR_NOR_VENDOR),
+          text  = STRING_TOKEN(STR_NOR_VENDOR_VALUE),
+          flags = 0,
+          key   = 0;
+
+        text
+          help  = STRING_TOKEN(STR_NOR_HELP),
+          text  = STRING_TOKEN(STR_NOR_MODEL),
+          text  = STRING_TOKEN(STR_NOR_MODEL_VALUE),
+          flags = 0,
+          key   = 0;
+
+        text
+          help  = STRING_TOKEN(STR_NOR_HELP),
+          text  = STRING_TOKEN(STR_NOR_JEDEC),
+          text  = STRING_TOKEN(STR_NOR_JEDEC_VALUE),
+          flags = 0,
+          key   = 0;
+
+        text
+          help  = STRING_TOKEN(STR_NOR_HELP),
+          text  = STRING_TOKEN(STR_NOR_CAPACITY),
+          text  = STRING_TOKEN(STR_NOR_CAPACITY_VALUE),
+          flags = 0,
+          key   = 0;
+
+        text
+          help  = STRING_TOKEN(STR_NOR_HELP),
+          text  = STRING_TOKEN(STR_NOR_REGION),
+          text  = STRING_TOKEN(STR_NOR_REGION_VALUE),
+          flags = 0,
+          key   = 0;
+
+        subtitle text = STRING_TOKEN(STR_NULL_STRING);
+
+        text
+          help  = STRING_TOKEN(STR_SERIAL_HELP),
+          text  = STRING_TOKEN(STR_SERIAL),
+          text  = STRING_TOKEN(STR_SERIAL_VALUE),
+          flags = 0,
+          key   = 0;
+
+        text
+          help  = STRING_TOKEN(STR_MAC_HELP),
+          text  = STRING_TOKEN(STR_MAC),
+          text  = STRING_TOKEN(STR_MAC_VALUE),
+          flags = 0,
+          key   = 0;
+
+    endform;
+endformset;

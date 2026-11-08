@@ -1,0 +1,94 @@
+#/** @file
+#
+#  SPI NOR flash backed UEFI variable store.
+#
+#  Copyright (c) 2026, IndiumEngine
+#
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+#**/
+
+[Defines]
+  INF_VERSION                    = 0x0001001A
+  BASE_NAME                      = SpiNorFlashDxe
+  FILE_GUID                      = 2e6f9c4b-3d1a-4f7e-9b6c-1a2d3e4f5a6b
+  MODULE_TYPE                    = DXE_RUNTIME_DRIVER
+  VERSION_STRING                 = 1.0
+  ENTRY_POINT                    = SpiNorFlashDxeInitialize
+
+#
+# The following information is for reference only and not required by the build
+# tools.
+#
+#  VALID_ARCHITECTURES           = AARCH64
+#
+
+[Sources]
+  FvbInfo.c
+  SpiNorFlashDxe.c
+  SpiNorFlashDxe.h
+  SpiNorFlashFvb.c
+
+[Packages]
+  ArmPkg/ArmPkg.dec
+  EmbeddedPkg/EmbeddedPkg.dec
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+  Platform/Rockchip/Rk356x/Rk356x.dec
+  Silicon/Rockchip/Rk356x/Rk356x.dec
+
+[LibraryClasses]
+  BaseLib
+  BaseMemoryLib
+  DebugLib
+  DevicePathLib
+  DxeServicesTableLib
+  IoLib
+  MemoryAllocationLib
+  PcdLib
+  TimerLib
+  UefiBootServicesTableLib
+  UefiDriverEntryPoint
+  UefiLib
+  UefiRuntimeLib
+  CruLib
+  FspiLib
+
+[Guids]
+  gEfiEventVirtualAddressChangeGuid
+  gEfiSystemNvDataFvGuid
+  gEdkiiNvVarStoreFormattedGuid
+
+[Protocols]
+  gEfiCpuArchProtocolGuid                       # PROTOCOL NOTIFY (SFC MMIO runtime mapping)
+  gEfiDevicePathProtocolGuid                    # PROTOCOL PRODUCED
+  gEfiFirmwareVolumeBlockProtocolGuid           # PROTOCOL PRODUCED
+  gEdkiiSpiNorFlashInfoProtocolGuid             # PROTOCOL PRODUCED
+
+[FixedPcd]
+  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageVariableSize
+  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwWorkingSize
+  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwSpareSize
+  gRk356xTokenSpaceGuid.PcdNvStorageVariableBase
+  gRk356xTokenSpaceGuid.PcdNvStorageFtwWorkingBase
+  gRk356xTokenSpaceGuid.PcdNvStorageFtwSpareBase
+  gRk356xTokenSpaceGuid.PcdNvStorageEventLogSize
+  gRk356xTokenSpaceGuid.PcdFirmwareBlockSize
+  gRk356xTokenSpaceGuid.PcdSpiNorVariableBase
+
+[Pcd]
+  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageVariableBase64
+  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwWorkingBase
+  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwSpareBase
+
+[Depex]
+  #
+  # Only the PCD protocol is required. This driver must run before
+  # VariableRuntimeDxe (FvMain order), because the variable driver copies
+  # the NV store at PcdFlashNvStorageVariableBase64 during its entry point
+  # and that address has to point at our shadow by then. The CPU-dependent
+  # step (marking the SFC MMIO UC|RUNTIME) is deferred to a
+  # gEfiCpuArchProtocolGuid protocol notify callback, and PcdDxe runs
+  # before this driver in the FvMain order.
+  #
+  gEfiPcdProtocolGuid
